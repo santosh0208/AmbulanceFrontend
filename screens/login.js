@@ -1,296 +1,205 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 
-const Login = () => {
-  const [hospitalName, setHospitalName] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
-  const [pointOfContact, setPointOfContact] = useState("");
-  const [location, setLocation] = useState("");
+// Login screen component
+const LoginScreen = ({ navigation }) => {
+  // State variables for email and password
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0); // Key to force re-render
 
-  const handleSubmit = () => {
-    console.log("Hospital Name:", hospitalName);
-    console.log("Contact Number:", `+254 ${contactNumber}`);
-    console.log("Point of Contact:", `+254 ${pointOfContact}`);
-    console.log("Location:", location);
+  // Function to validate email or phone number
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com)$/; // Only Gmail & Yahoo allowed
+    const phoneRegex = /^[6-9]\d{9}$/; // Validates 10-digit phone numbers starting with 6-9
+
+    if (!email) {
+      return "⚠ Email or phone number is required.";
+    } else if (!emailRegex.test(email) && !phoneRegex.test(email)) {
+      return "⚠ Enter a valid email ID (user12@gmail.com) or phone number (9876543210).";
+    }
+    return ''; // No error
   };
 
+  // Function to validate password strength
+  const validatePassword = (password) => {
+    const hasCapitalLetter = /[A-Z]/.test(password);
+    const hasSpecialCharacter = /[!@#$%^&*]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const startsWithSpecialChar = /^[!@#$%^&*]/.test(password);
+
+    if (password.length < 8) {
+      return "⚠ Password must be at least 8 characters long.";
+    } else if (startsWithSpecialChar) {
+      return "⚠ Password cannot start with a special character.";
+    } else if (!hasCapitalLetter) {
+      return "⚠ Password must contain at least one uppercase letter.";
+    } else if (!hasSpecialCharacter) {
+      return "⚠ Password must contain at least one special character.";
+    } else if (!hasNumber) {
+      return "⚠ Password must contain at least one number.";
+    }
+    return ''; // No error
+  };
+
+  // Function to handle login button press
+  const handleLogin = async () => {
+    const emailErr = validateEmail(email);
+    const passwordErr = validatePassword(password);
+
+    // Update error state
+    setEmailError(emailErr);
+    setPasswordError(passwordErr);
+
+    // Proceed only if there are no errors
+    if (!emailErr && !passwordErr) {
+      try {
+        alert("Login Successful!");
+
+        // Reset input fields
+        setEmail('');
+        setPassword('');
+
+        // Force re-render of the screen
+        setRefreshKey((prevKey) => prevKey + 1);
+      } catch (error) {
+        console.error("Error saving data:", error);
+      }
+    }
+  };
+
+  // Load user data when the app opens
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+
+        // Set state if values exist in storage
+        if (savedEmail) setEmail(savedEmail);
+        setEmail('');
+        if (savedPassword) setPassword(savedPassword);
+        setPassword('');
+      } catch (error) {
+        console.error("Error loading data:", error);
+      }
+    };
+    loadUserData();
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Registration</Text>
-      <Text style={styles.subtitle}>Hospital Details</Text>
+    <View key={refreshKey} style={styles.container}>
+      <Text style={styles.title}>Login</Text>
 
-      <Text style={styles.label}>Hospital Name</Text>
+      {/* Login Image */}
+      {/* <Image source={require('../../assets/undraw_mobile-login_4ntr.png')} style={styles.logo} /> */}
+
+      {/* Email or Phone Number Input Field */}
       <TextInput
         style={styles.input}
-        placeholder="Enter hospital name"
-        value={hospitalName}
-        onChangeText={setHospitalName}
+        placeholder="Enter your email"
+        placeholderTextColor="#FFFFFF"
+        autoCapitalize="none"
+        keyboardType="default"
+        value={email}
+        onChangeText={(text) => {
+          setEmail(text);
+          setEmailError(validateEmail(text)); // Validate while typing
+        }}
       />
+      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-      <Text style={styles.label}>Contact Number</Text>
-      <View style={styles.row}>
-        <Text style={styles.prefix}>+254</Text>
-        <TextInput
-          style={[styles.input, styles.flex]}
-          keyboardType="phone-pad"
-          placeholder="Enter contact number"
-          value={contactNumber}
-          onChangeText={setContactNumber}
-        />
-      </View>
-
-      <Text style={styles.label}>Point of Contact at Hospital</Text>
-      <View style={styles.row}>
-        <Text style={styles.prefix}>+254</Text>
-        <TextInput
-          style={[styles.input, styles.flex]}
-          keyboardType="phone-pad"
-          placeholder="Enter point of contact"
-          value={pointOfContact}
-          onChangeText={setPointOfContact}
-        />
-      </View>
-
-      <Text style={styles.label}>Location</Text>
+      {/* Password Input Field */}
       <TextInput
         style={styles.input}
-        placeholder="Enter location"
-        value={location}
-        onChangeText={setLocation}
+        placeholder="Enter your password"
+        placeholderTextColor="#FFFFFF"
+        secureTextEntry
+        value={password}
+        onChangeText={(text) => {
+          setPassword(text);
+          setPasswordError(validatePassword(text)); // Validate while typing
+        }}
       />
+      {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Submit</Text>
+      {/* Forgot Password Button */}
+      <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate('ForgotPasswordScreen')}>
+        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+      </TouchableOpacity>
+
+      {/* Login Button */}
+      <TouchableOpacity
+        style={[styles.button, (email && password.length >= 8) ? {} : styles.disabledButton]}
+        onPress={handleLogin}
+        disabled={!email || password.length < 8}
+      >
+        <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
+// Styles for the screen components
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
-    justifyContent: "center",
+  container: { 
+    flex: 1, 
+    justifyContent: 'center',
+    alignItems: 'center', 
+    backgroundColor: 'white',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "red",
-    textAlign: "center",
+  title: { 
+    fontSize: 50, 
+    fontWeight: 'bold', 
+    marginBottom: 20 
+  },
+  input: { 
+    width: '80%',
+    padding: 15, 
+    borderRadius: 8, 
+    marginBottom: 15, 
+    backgroundColor:'#FF3F3F',
+    fontWeight: 'bold',
+    color: '#fff',
+    fontSize: 15, 
+    paddingLeft: 40,
+  },
+  button: { 
+    backgroundColor: '#007BFF', 
+    padding: 10, 
+    borderRadius: 8, 
+    width: '80%', 
+    alignItems: 'center',
+  },
+  buttonText: { 
+    color: '#fff', 
+    fontSize: 35, 
+    fontWeight: 'bold'
+  },
+  disabledButton: {
+    backgroundColor: '#A9A9A9', // Greyed out button when disabled
+  },
+  forgotPassword: { 
+    alignSelf: 'flex-end', 
+    marginRight: '10%', 
+    marginBottom: 20 ,
+  },
+  forgotPasswordText: { 
+    color: 'black', 
+    fontSize: 14, 
+    fontWeight: 'bold',
+  },
+  logo: {
+    width: 250,
+    height: 250,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    fontWeight: 'bold',
     marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "blue",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#000",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 12,
-    // flex: 1,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  prefix: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginRight: 10,
-  },
-  flex: {
-    flex: 1,
-  },
-  button: {
-    backgroundColor: "blue",
-    padding: 12,
-    borderRadius: 5,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+    textAlign: 'center',
+  }
 });
 
-export default Login;
-
-
-
-
-// login screen ui part is below
-// import React, { useState } from 'react';
-// import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-
-// const App = () => {
-//   const [mobile, setMobile] = useState('');
-//   const [otp, setOtp] = useState(['', '', '', '']);
-
-//   const handleOtpChange = (text, index) => {
-//     let newOtp = [...otp];
-//     newOtp[index] = text;
-//     setOtp(newOtp);
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>Login</Text>
-
-//       <Text style={styles.label}>Mobile Number</Text>
-//       <View style={styles.inputContainer}>
-//         <Text style={styles.countryCode}>+254</Text>
-//         <TextInput
-//           style={styles.input}
-//           placeholder="1234567891"
-//           placeholderTextColor="#ccc"
-//           keyboardType="numeric"
-//           maxLength={10}
-//           value={mobile}
-//           onChangeText={setMobile}
-//         />
-//       </View>
-
-//       <Text style={styles.label}>OTP</Text>
-//       <View style={styles.otpContainer}>
-//         {otp.map((digit, index) => (
-//           <TextInput
-//             key={index}
-//             style={styles.otpInput}
-//             keyboardType="numeric"
-//             maxLength={1}
-//             value={digit}
-//             onChangeText={(text) => handleOtpChange(text, index)}
-//           />
-//         ))}
-//       </View>
-
-//       <TouchableOpacity style={styles.loginButton}>
-//         <Text style={styles.loginText}>Login</Text>
-//       </TouchableOpacity>
-
-//       <TouchableOpacity>
-//         <Text style={styles.registerText}>Register..?</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     backgroundColor: '#fff',
-//   },
-//   title: {
-//     fontSize: 28,
-//     fontWeight: 'bold',
-//     color: 'red',
-//     marginBottom: 20,
-//   },
-//   label: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//     color: 'red',
-//     alignSelf: 'flex-start',
-//     marginLeft: 40,
-//     marginBottom: 5,
-//   },
-//   inputContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     borderRadius: 5,
-//     paddingHorizontal: 10,
-//     width: '80%',
-//     marginBottom: 20,
-//   },
-//   countryCode: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//     marginRight: 10,
-//   },
-//   input: {
-//     flex: 1,
-//     height: 40,
-//     fontSize: 16,
-//     color: '#000',
-//   },
-//   otpContainer: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     width: '60%',
-//     marginBottom: 20,
-//   },
-//   otpInput: {
-//     width: 40,
-//     height: 40,
-//     borderWidth: 1,
-//     borderColor: '#000',
-//     textAlign: 'center',
-//     fontSize: 18,
-//     borderRadius: 5,
-//   },
-//   loginButton: {
-//     backgroundColor: '#008CFF',
-//     paddingVertical: 10,
-//     paddingHorizontal: 30,
-//     borderRadius: 5,
-//   },
-//   loginText: {
-//     color: '#fff',
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//   },
-//   registerText: {
-//     marginTop: 15,
-//     color: '#008CFF',
-//     textDecorationLine: 'underline',
-//   },
-// });
-
-// export default App;
-
-
-
-// import React from 'react';
-// import { View, Text, StyleSheet } from 'react-native';
-
-// const App = () => {
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.text}>Hello, World!</Text>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     backgroundColor: 'white',
-//   },
-//   text: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//     color: 'black',
-//   },
-// });
-
-// export default App;
+export default LoginScreen;
